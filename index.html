@@ -1,0 +1,1816 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Pokémon SoulLink Tracker</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg-base: #18191f;
+      --bg-surface: #21242d;
+      --bg-subtle: #292d38;
+      --bg-hover: #333947;
+      --border-outer: #121318;
+      --border-subtle: #3a404f;
+      --border-focus: #5d6780;
+      
+      --text-main: #d3d9e6;
+      --text-muted: #9aa2b5;
+      --text-subtle: #70788d;
+
+      --accent: #4865e2;
+      --accent-hover: #3b54c4;
+      --accent-dim: rgba(72, 101, 226, 0.18);
+
+      --status-alive: #38bdf8;
+      --status-alive-dim: rgba(56, 189, 248, 0.12);
+      --status-faint: #f47174;
+      --status-faint-dim: rgba(244, 113, 116, 0.12);
+      
+      --dead-row-bg: rgba(244, 113, 116, 0.05);
+      --dead-row-text: #6b7280;
+
+      --tag-route-bg: rgba(46, 74, 55, 0.5);
+      --tag-route-accent: #68b684;
+      --tag-route-text: #bfe5cc;
+
+      --tag-city-bg: rgba(43, 56, 88, 0.55);
+      --tag-city-accent: #6a88d6;
+      --tag-city-text: #c8d5f7;
+
+      --tag-island-bg: rgba(38, 68, 84, 0.55);
+      --tag-island-accent: #5ba3c4;
+      --tag-island-text: #c0e3f5;
+
+      --tag-dungeon-bg: rgba(74, 58, 38, 0.5);
+      --tag-dungeon-accent: #ad8d5f;
+      --tag-dungeon-text: #e7d8bd;
+
+      --tag-special-bg: rgba(64, 46, 82, 0.55);
+      --tag-special-accent: #a37bd0;
+      --tag-special-text: #e0d0f2;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: var(--bg-base);
+      color: var(--text-main);
+      margin: 0;
+      padding: 2.5rem 1rem;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      min-height: 100vh;
+      font-size: 1.05rem;
+    }
+
+    .retro-title {
+      font-family: 'VT323', monospace;
+      font-size: 2.5rem;
+      color: #e4e7ee;
+      letter-spacing: 0.05em;
+      margin: 0 0 0.1rem 0;
+      text-align: center;
+      line-height: 1;
+      text-shadow: 1px 1px 0px #0c0d12;
+    }
+
+    h3 {
+      font-size: 0.95rem;
+      font-weight: 400;
+      color: var(--text-muted);
+      margin: 0 0 2rem 0;
+      text-align: center;
+      letter-spacing: 0.03em;
+    }
+
+    #menuView, #trackerView, #bossView {
+      width: 100%;
+      max-width: 1150px;
+    }
+
+    .gba-panel {
+      background: var(--bg-surface);
+      border: 3px solid var(--border-subtle);
+      box-shadow: inset 2px 2px 0px rgba(255,255,255,0.06), inset -2px -2px 0px rgba(0,0,0,0.4), 0 8px 24px rgba(0,0,0,0.35);
+      border-radius: 12px;
+    }
+
+    input, select, button {
+      font-family: inherit;
+      font-size: 1.02rem;
+      border-radius: 8px;
+      border: 1px solid var(--border-subtle);
+      background: var(--bg-surface);
+      color: var(--text-main);
+      padding: 0.75rem 1rem;
+      outline: none;
+      transition: all 0.15s ease;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--border-focus);
+      background: var(--bg-subtle);
+    }
+
+    button {
+      cursor: pointer;
+      font-weight: 500;
+      background: var(--accent);
+      color: #fff;
+      border: 1px solid transparent;
+    }
+
+    button:hover {
+      background: var(--accent-hover);
+    }
+
+    .menu-card {
+      padding: 2rem;
+      margin-bottom: 1.75rem;
+    }
+
+    .menu-card h2 {
+      font-family: 'VT323', monospace;
+      font-size: 1.6rem;
+      color: var(--text-main);
+      margin-top: 0;
+      margin-bottom: 1.25rem;
+      letter-spacing: 0.03em;
+      line-height: 1;
+    }
+
+    .save-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.65rem;
+    }
+
+    .save-item-row {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .save-btn {
+      flex: 1;
+      text-align: left;
+      background: var(--bg-subtle);
+      color: var(--text-main);
+      border: 1px solid var(--border-subtle);
+      padding: 1rem 1.25rem;
+      border-radius: 8px;
+      font-size: 1.05rem;
+    }
+
+    .save-btn:hover {
+      background: var(--bg-hover);
+      border-color: var(--border-focus);
+    }
+
+    .save-delete-btn {
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-subtle);
+      border-radius: 8px;
+      padding: 1rem 1.1rem;
+      cursor: pointer;
+      line-height: 1;
+      transition: all 0.15s ease;
+    }
+
+    .save-delete-btn:hover {
+      background: rgba(244, 113, 116, 0.15);
+      border-color: rgba(244, 113, 116, 0.4);
+      color: var(--status-faint);
+    }
+
+    .field-label {
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-subtle);
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      margin-bottom: 0.5rem;
+      display: block;
+    }
+
+    .top-bar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 1.5rem;
+      gap: 1rem;
+      flex-wrap: wrap;
+    }
+
+    .nav-btn {
+      background: var(--bg-surface);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+      padding: 0.65rem 1.2rem;
+      font-size: 0.95rem;
+    }
+
+    .nav-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .boss-nav-group {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      flex-wrap: wrap;
+    }
+
+    .boss-toggle-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: #e2c079;
+      font-weight: 600;
+      padding: 0.65rem 1.2rem;
+      font-size: 0.95rem;
+    }
+
+    .boss-toggle-btn:hover {
+      background: var(--bg-subtle);
+      border-color: var(--border-focus);
+      color: #f3d492;
+    }
+
+    .active-cap-pill {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-subtle);
+      color: var(--text-muted);
+      font-size: 0.88rem;
+      font-weight: 500;
+      padding: 0.55rem 0.85rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
+
+    .active-cap-pill strong {
+      color: #e2c079;
+      font-weight: 600;
+    }
+
+    .player-header {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+    }
+
+    .edit-name-btn {
+      background: transparent;
+      border: none;
+      color: var(--text-subtle);
+      cursor: pointer;
+      font-size: 1.05rem;
+      padding: 0.2rem 0.4rem;
+      border-radius: 4px;
+    }
+
+    .edit-name-btn:hover {
+      background: var(--bg-subtle);
+      color: var(--text-main);
+    }
+
+    .table-container {
+      overflow: hidden;
+      position: relative;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: left;
+    }
+
+    th {
+      font-size: 0.82rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+      color: var(--text-subtle);
+      padding: 1.1rem 1.4rem;
+      background: rgba(0,0,0,0.18);
+      border-bottom: 2px solid var(--border-subtle);
+    }
+
+    td {
+      padding: 0.9rem 1.4rem;
+      border-bottom: 1px solid var(--border-subtle);
+      vertical-align: middle;
+      font-size: 1.05rem;
+    }
+
+    tr:last-child td { border-bottom: none; }
+
+    tr:hover td {
+      background: rgba(255, 255, 255, 0.015);
+    }
+
+    .loc-badge {
+      display: inline-flex;
+      align-items: center;
+      font-weight: 500;
+      font-size: 0.93rem;
+      padding: 0.45rem 0.85rem;
+      border-radius: 5px;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      border: 1px solid rgba(255,255,255,0.06);
+      box-shadow: inset 1px 1px 0px rgba(255,255,255,0.08), 1px 2px 4px rgba(0,0,0,0.3);
+      border-left-width: 4px;
+    }
+
+    .loc-route {
+      background: var(--tag-route-bg);
+      border-left-color: var(--tag-route-accent);
+      color: var(--tag-route-text);
+    }
+
+    .loc-city {
+      background: var(--tag-city-bg);
+      border-left-color: var(--tag-city-accent);
+      color: var(--tag-city-text);
+    }
+
+    .loc-island {
+      background: var(--tag-island-bg);
+      border-left-color: var(--tag-island-accent);
+      color: var(--tag-island-text);
+    }
+
+    .loc-dungeon {
+      background: var(--tag-dungeon-bg);
+      border-left-color: var(--tag-dungeon-accent);
+      color: var(--tag-dungeon-text);
+    }
+
+    .loc-special {
+      background: var(--tag-special-bg);
+      border-left-color: var(--tag-special-accent);
+      color: var(--tag-special-text);
+    }
+
+    .pkmn-slot {
+      display: flex;
+      align-items: center;
+      gap: 0.9rem;
+      min-height: 80px;
+    }
+
+    .sprite-box {
+      width: 72px;
+      min-width: 72px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+    }
+
+    .sprite-img {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      display: none;
+      filter: drop-shadow(0 4px 5px rgba(0,0,0,0.4));
+    }
+
+    .pkmn-select-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.35rem;
+      flex: 1;
+      max-width: 240px;
+    }
+
+    .types-container {
+      display: flex;
+      gap: 0.35rem;
+      min-height: 18px;
+    }
+
+    .type-pill {
+      font-size: 0.65rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      padding: 0.15rem 0.45rem;
+      border-radius: 4px;
+      line-height: 1.2;
+      color: #f1f3f7;
+      text-shadow: 1px 1px 0px rgba(0,0,0,0.4);
+    }
+
+    .type-normal   { background: #4a4e59; }
+    .type-fire     { background: #7c3b2e; }
+    .type-water    { background: #35537a; }
+    .type-grass    { background: #375e3c; }
+    .type-electric { background: #756227; }
+    .type-ice      { background: #32646c; }
+    .type-fighting { background: #6b3330; }
+    .type-poison   { background: #563361; }
+    .type-ground   { background: #695333; }
+    .type-flying   { background: #464875; }
+    .type-psychic  { background: #753351; }
+    .type-bug      { background: #505c2a; }
+    .type-rock     { background: #5c5436; }
+    .type-ghost    { background: #443c5e; }
+    .type-dragon   { background: #403273; }
+    .type-steel    { background: #4a4e5c; }
+
+    .custom-select {
+      position: relative;
+      width: 100%;
+    }
+
+    .custom-select-trigger {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      border-radius: 8px;
+      padding: 0.65rem 0.9rem;
+      cursor: pointer;
+      font-size: 0.98rem;
+      color: var(--text-main);
+      user-select: none;
+    }
+
+    .custom-select-trigger:hover {
+      border-color: var(--border-focus);
+    }
+
+    .custom-select.active .custom-select-trigger {
+      border-color: var(--accent);
+      background: var(--bg-hover);
+    }
+
+    .custom-select-options {
+      position: absolute;
+      top: calc(100% + 4px);
+      left: 0;
+      right: 0;
+      max-height: 250px;
+      overflow-y: auto;
+      background: #232630;
+      border: 1px solid var(--border-focus);
+      border-radius: 8px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.5);
+      z-index: 100;
+      display: none;
+    }
+
+    .custom-select.active .custom-select-options {
+      display: block;
+    }
+
+    .custom-option {
+      display: flex;
+      align-items: center;
+      gap: 0.65rem;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+      font-size: 0.95rem;
+      color: var(--text-main);
+      transition: background 0.1s ease;
+    }
+
+    .custom-option:hover {
+      background: var(--bg-hover);
+    }
+
+    .option-sprite {
+      width: 30px;
+      height: 30px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+    }
+
+    .evolve-btn {
+      background: #252a34;
+      color: var(--text-muted);
+      border: 1px solid #363d4e;
+      padding: 0.5rem 0.75rem;
+      border-radius: 7px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      display: none;
+      align-items: center;
+      gap: 0.4rem;
+      flex-shrink: 0;
+      transition: all 0.15s ease;
+      box-shadow: 0 2px 4px rgba(0, 0, 0, 0.15);
+    }
+
+    .evolve-btn .evo-arrow {
+      color: #68b684;
+      font-size: 0.78rem;
+      line-height: 1;
+      display: inline-block;
+      transition: transform 0.15s ease;
+    }
+
+    .evolve-btn:hover {
+      background: #2b313d;
+      color: var(--text-main);
+      border-color: #485268;
+    }
+
+    .evolve-btn:hover .evo-arrow {
+      color: #79c996;
+      transform: translateY(-1px);
+    }
+
+    .status-btn {
+      width: 100%;
+      padding: 0.6rem 0.75rem;
+      font-size: 0.88rem;
+      font-weight: 600;
+      letter-spacing: 0.02em;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.55rem;
+      border: 1px solid transparent;
+      transition: all 0.15s ease;
+    }
+
+    .pokeball-icon {
+      width: 17px;
+      height: 17px;
+      flex-shrink: 0;
+      display: inline-block;
+    }
+
+    .btn-alive {
+      background: var(--status-alive-dim);
+      color: var(--status-alive);
+      border-color: rgba(56, 189, 248, 0.25);
+    }
+
+    .btn-alive:hover {
+      background: rgba(56, 189, 248, 0.2);
+    }
+
+    .btn-dead {
+      background: var(--status-faint-dim);
+      color: var(--status-faint);
+      border-color: rgba(244, 113, 116, 0.25);
+    }
+
+    .btn-dead:hover {
+      background: rgba(244, 113, 116, 0.2);
+    }
+
+    .dead-row {
+      background: var(--dead-row-bg) !important;
+    }
+
+    .dead-row td {
+      opacity: 0.55;
+    }
+
+    .dead-row .loc-badge {
+      text-decoration: line-through;
+      opacity: 0.5;
+    }
+
+    .boss-accordion-item {
+      background: var(--bg-surface);
+      border: 2px solid var(--border-subtle);
+      border-radius: 12px;
+      margin-bottom: 0.85rem;
+      overflow: hidden;
+      transition: all 0.15s ease;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+
+    .boss-accordion-item:hover {
+      border-color: var(--border-focus);
+    }
+
+    .boss-accordion-item.defeated {
+      background: rgba(26, 32, 28, 0.7);
+      border-color: rgba(74, 124, 89, 0.3);
+      opacity: 0.75;
+    }
+
+    .boss-row-header {
+      display: flex;
+      align-items: center;
+      gap: 1.25rem;
+      padding: 0.85rem 1.4rem;
+      cursor: pointer;
+      user-select: none;
+      background: transparent;
+      min-height: 90px;
+    }
+
+    .boss-row-header:hover {
+      background: var(--bg-subtle);
+    }
+
+    .boss-chevron {
+      color: var(--text-subtle);
+      font-size: 1.1rem;
+      line-height: 1;
+      width: 16px;
+      transition: transform 0.2s ease, color 0.2s ease;
+      flex-shrink: 0;
+    }
+
+    .boss-accordion-item.open .boss-chevron {
+      transform: rotate(90deg);
+      color: var(--text-main);
+    }
+
+    .boss-trainer-sprite {
+      width: 72px;
+      height: 72px;
+      object-fit: contain;
+      image-rendering: pixelated;
+      flex-shrink: 0;
+      filter: drop-shadow(0 4px 6px rgba(0,0,0,0.4));
+    }
+
+    .boss-info-block {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+
+    .boss-name-text {
+      font-family: 'VT323', monospace;
+      font-size: 1.5rem;
+      color: #93c5fd;
+      line-height: 1.1;
+      letter-spacing: 0.04em;
+    }
+
+    .boss-role-text {
+      font-size: 0.92rem;
+      color: var(--text-muted);
+      line-height: 1.2;
+    }
+
+    .boss-header-meta {
+      margin-left: auto;
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+    }
+
+    .boss-loc-text {
+      font-size: 0.9rem;
+      color: var(--text-subtle);
+    }
+
+    .level-cap-badge {
+      font-size: 0.85rem;
+      font-weight: 600;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      color: #e2c079;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      white-space: nowrap;
+    }
+
+    .boss-accordion-item.defeated .level-cap-badge {
+      text-decoration: line-through;
+      opacity: 0.6;
+    }
+
+    .boss-status-btn {
+      padding: 0.45rem 0.85rem;
+      font-size: 0.85rem;
+      font-weight: 600;
+      border-radius: 6px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      white-space: nowrap;
+      transition: all 0.15s ease;
+    }
+
+    .btn-boss-undefeated {
+      background: var(--bg-subtle);
+      color: var(--text-muted);
+      border: 1px solid var(--border-subtle);
+    }
+
+    .btn-boss-undefeated:hover {
+      background: var(--bg-hover);
+      color: var(--text-main);
+      border-color: var(--border-focus);
+    }
+
+    .btn-boss-defeated {
+      background: var(--tag-route-bg);
+      color: var(--tag-route-text);
+      border: 1px solid var(--tag-route-border);
+    }
+
+    .btn-boss-defeated:hover {
+      background: rgba(74, 124, 89, 0.3);
+    }
+
+    .boss-accordion-body {
+      display: none;
+      padding: 1.2rem 1.4rem 1.4rem 6.5rem;
+      background: rgba(0, 0, 0, 0.15);
+      border-top: 1px solid var(--border-subtle);
+    }
+
+    .boss-accordion-item.open .boss-accordion-body {
+      display: block;
+    }
+
+    .boss-team-row {
+      display: flex;
+      gap: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .boss-pkmn-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+      background: var(--bg-subtle);
+      border: 1px solid var(--border-subtle);
+      padding: 0.4rem 0.75rem;
+      border-radius: 6px;
+      font-size: 0.95rem;
+      color: var(--text-main);
+    }
+
+    .boss-pkmn-badge img {
+      width: 32px;
+      height: 32px;
+      object-fit: contain;
+      image-rendering: pixelated;
+    }
+
+    .boss-pkmn-lvl {
+      font-size: 0.82rem;
+      color: var(--text-subtle);
+    }
+  </style>
+
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.9.0/firebase-database-compat.js"></script>
+</head>
+<body>
+
+  <h1 class="retro-title">SoulLink Tracker</h1>
+  <h3 id="currentSaveDisplay">Shared Playthrough Ledger</h3>
+
+  <!-- ==================== MENU VIEW ==================== -->
+  <div id="menuView">
+    <div class="menu-card gba-panel">
+      <h2>Active Playthroughs</h2>
+      <div id="saveListContainer"><span style="color: var(--text-subtle);">Loading saves...</span></div>
+    </div>
+
+    <div class="menu-card gba-panel">
+      <h2>Start New Run</h2>
+      <div style="margin-bottom: 1.5rem;">
+        <label class="field-label">Game Version</label>
+        <select id="gameSelect" style="width: 100%;">
+          <option value="firered-leafgreen">FireRed / LeafGreen</option>
+        </select>
+      </div>
+      <div>
+        <label class="field-label">Run Name</label>
+        <div style="display: flex; gap: 0.6rem;">
+          <input id="newSaveInput" type="text" placeholder="e.g., emerald-duo" style="flex: 1;" />
+          <button id="createSaveBtn">Create Run</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================== TRACKER VIEW ==================== -->
+  <div id="trackerView" style="display: none;">
+    <div class="top-bar">
+      <button id="backBtn" class="nav-btn">← Save Selection</button>
+      
+      <div class="boss-nav-group">
+        <button id="openBossPageBtn" class="boss-toggle-btn">🏆 Major Battles & Caps</button>
+        <div id="nextCapPill" class="active-cap-pill">Next Cap: Lv 14 (Brock)</div>
+      </div>
+
+      <div style="font-size: 0.95rem; color: var(--text-subtle);">Auto-syncing to cloud</div>
+    </div>
+
+    <div class="table-container gba-panel">
+      <table>
+        <thead>
+          <tr>
+            <th style="width: 25%;">Location</th>
+            <th style="width: 32%;">
+              <div class="player-header">
+                <span id="p1NameHeader">Player 1</span>
+                <button class="edit-name-btn" id="editP1Btn" title="Edit Name">✎</button>
+              </div>
+            </th>
+            <th style="width: 32%;">
+              <div class="player-header">
+                <span id="p2NameHeader">Player 2</span>
+                <button class="edit-name-btn" id="editP2Btn" title="Edit Name">✎</button>
+              </div>
+            </th>
+            <th style="width: 11%;">Status</th>
+          </tr>
+        </thead>
+        <tbody id="trackerTable">
+          <tr><td colspan="4" style="text-align:center; color: var(--text-subtle); padding: 2.5rem;">Loading checklist...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ==================== BOSS BATTLES VIEW ==================== -->
+  <div id="bossView" style="display: none;">
+    <div class="top-bar">
+      <button id="backToTrackerBtn" class="nav-btn">← Return to Tracker</button>
+      <div style="display: flex; align-items: center; gap: 0.75rem;">
+        <label for="starterPickSelect" style="font-size: 0.95rem; color: var(--text-muted); font-weight: 500;">Starter Route:</label>
+        <select id="starterPickSelect" style="padding: 0.45rem 0.85rem; font-size: 0.95rem;">
+          <option value="bulbasaur">Bulbasaur (Rival: Charmander)</option>
+          <option value="charmander">Charmander (Rival: Squirtle)</option>
+          <option value="squirtle">Squirtle (Rival: Bulbasaur)</option>
+        </select>
+      </div>
+    </div>
+
+    <div id="bossAccordionContainer"></div>
+  </div>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyBs2Cmwt9Az2tb5xaJrH8nTUT9_9L96tHM",
+      authDomain: "soullink-fukrs.firebaseapp.com",
+      databaseURL: "https://soullink-fukrs-default-rtdb.firebaseio.com",
+      projectId: "soullink-fukrs",
+      storageBucket: "soullink-fukrs.firebasestorage.app",
+      messagingSenderId: "275517194101",
+      appId: "1:275517194101:web:dfe9279dfad312e166dd3c"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.database();
+    
+    let currentSaveName = ""; 
+    let pairsRef = null;
+    let metaRef = null;
+    let bossesRef = null;
+    let localRouteCache = {}; 
+    let firebaseState = {}; 
+    let bossState = {}; 
+    let pokemonDetailsCache = {};
+    let evolutionCheckCache = {};
+
+    const fireRedOrder = [
+      { display: "Starter", apiId: null },
+      { display: "Pallet Town", apiId: "pallet-town" },
+      { display: "Route 1", apiId: "kanto-route-1" },
+      { display: "Viridian City", apiId: "viridian-city" },
+      { display: "Route 22", apiId: "kanto-route-22" },
+      { display: "Route 2", apiId: "kanto-route-2" },
+      { display: "Viridian Forest", apiId: "viridian-forest" },
+      { display: "Route 3", apiId: "kanto-route-3" },
+      { display: "Route 4", apiId: "kanto-route-4" },
+      { display: "Mt. Moon", apiId: "mt-moon" },
+      { display: "Cerulean City", apiId: "cerulean-city" },
+      { display: "Route 24", apiId: "kanto-route-24" },
+      { display: "Route 25", apiId: "kanto-route-25" },
+      { display: "Route 5", apiId: "kanto-route-5" },
+      { display: "Route 6", apiId: "kanto-route-6" },
+      { display: "Vermillion City", apiId: "vermilion-city" },
+      { display: "Route 11", apiId: "kanto-route-11" },
+      { display: "Diglett's Cave", apiId: "digletts-cave" },
+      { display: "Route 9", apiId: "kanto-route-9" },
+      { display: "Route 10", apiId: "kanto-route-10" },
+      { display: "Rock Tunnel", apiId: "rock-tunnel" },
+      { display: "Pokemon Tower", apiId: "pokemon-tower" },
+      { display: "Route 12", apiId: "kanto-route-12" },
+      { display: "Route 8", apiId: "kanto-route-8" },
+      { display: "Route 7", apiId: "kanto-route-7" },
+      { display: "Celadon City", apiId: "celadon-city" },
+      { display: "Saffron City", apiId: "saffron-city" },
+      { display: "Route 16", apiId: "kanto-route-16" },
+      { display: "Route 17", apiId: "kanto-route-17" },
+      { display: "Route 18", apiId: "kanto-route-18" },
+      { display: "Fuschia City", apiId: "fuchsia-city" },
+      { display: "Safari Zone", apiId: "kanto-safari-zone" },
+      { display: "Route 15", apiId: "kanto-route-15" },
+      { display: "Route 14", apiId: "kanto-route-14" },
+      { display: "Route 13", apiId: "kanto-route-13" },
+      { display: "Power Plant", apiId: "power-plant" },
+      { display: "Route 19", apiId: "kanto-route-19" },
+      { display: "Route 20", apiId: "kanto-route-20" },
+      { display: "Seafoam Islands", apiId: "seafoam-islands" },
+      { display: "Cinnabar Island", apiId: "cinnabar-island" },
+      { display: "Pokemon Mansion", apiId: "pokemon-mansion" },
+      { display: "One Island", apiId: "one-island" },
+      { display: "Two Island", apiId: "two-island" },
+      { display: "Three Island", apiId: "three-island" },
+      { display: "Route 21", apiId: "kanto-route-21" },
+      { display: "Route 23", apiId: "kanto-route-23" },
+      { display: "Victory Road", apiId: "kanto-victory-road" },
+      { display: "Four Island", apiId: "four-island" },
+      { display: "Five Island", apiId: "five-island" },
+      { display: "Six Island", apiId: "six-island" },
+      { display: "Seven Island", apiId: "seven-island" },
+      { display: "Cerulean Cave", apiId: "cerulean-cave" }
+    ];
+
+    const frlgBosses = [
+      {
+        name: "Blue",
+        role: "Rival 1",
+        loc: "Oak's Lab (Pallet Town)",
+        cap: "Lv 5",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png",
+        teams: {
+          bulbasaur: [{ name: "Charmander", lvl: 5 }],
+          charmander: [{ name: "Squirtle", lvl: 5 }],
+          squirtle: [{ name: "Bulbasaur", lvl: 5 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 2 (Optional)",
+        loc: "Route 22",
+        cap: "Lv 9",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgey", lvl: 9 }, { name: "Charmander", lvl: 9 }],
+          charmander: [{ name: "Pidgey", lvl: 9 }, { name: "Squirtle", lvl: 9 }],
+          squirtle: [{ name: "Pidgey", lvl: 9 }, { name: "Bulbasaur", lvl: 9 }]
+        }
+      },
+      {
+        name: "Brock",
+        role: "Gym Leader",
+        loc: "Pewter City Gym",
+        cap: "Lv 14",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/brock-gen3.png",
+        teams: {
+          all: [{ name: "Geodude", lvl: 12 }, { name: "Onix", lvl: 14 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 3",
+        loc: "Cerulean City (Nugget Bridge exit)",
+        cap: "Lv 18",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeotto", lvl: 17 }, { name: "Abra", lvl: 16 }, { name: "Rattata", lvl: 15 }, { name: "Charmander", lvl: 18 }],
+          charmander: [{ name: "Pidgeotto", lvl: 17 }, { name: "Abra", lvl: 16 }, { name: "Rattata", lvl: 15 }, { name: "Squirtle", lvl: 18 }],
+          squirtle: [{ name: "Pidgeotto", lvl: 17 }, { name: "Abra", lvl: 16 }, { name: "Rattata", lvl: 15 }, { name: "Bulbasaur", lvl: 18 }]
+        }
+      },
+      {
+        name: "Misty",
+        role: "Gym Leader",
+        loc: "Cerulean City Gym",
+        cap: "Lv 21",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/misty-gen3.png",
+        teams: {
+          all: [{ name: "Staryu", lvl: 18 }, { name: "Starmie", lvl: 21 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 4",
+        loc: "S.S. Anne (2F)",
+        cap: "Lv 20",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3two.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeotto", lvl: 19 }, { name: "Raticate", lvl: 16 }, { name: "Kadabra", lvl: 18 }, { name: "Charmeleon", lvl: 20 }],
+          charmander: [{ name: "Pidgeotto", lvl: 19 }, { name: "Raticate", lvl: 16 }, { name: "Kadabra", lvl: 18 }, { name: "Wartortle", lvl: 20 }],
+          squirtle: [{ name: "Pidgeotto", lvl: 19 }, { name: "Raticate", lvl: 16 }, { name: "Kadabra", lvl: 18 }, { name: "Ivysaur", lvl: 20 }]
+        }
+      },
+      {
+        name: "Lt. Surge",
+        role: "Gym Leader",
+        loc: "Vermilion City Gym",
+        cap: "Lv 24",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/ltsurge-gen3.png",
+        teams: {
+          all: [{ name: "Voltorb", lvl: 21 }, { name: "Pikachu", lvl: 18 }, { name: "Raichu", lvl: 24 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 5",
+        loc: "Pokémon Tower (2F)",
+        cap: "Lv 25",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3two.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeotto", lvl: 25 }, { name: "Gyarados", lvl: 23 }, { name: "Growlithe", lvl: 22 }, { name: "Kadabra", lvl: 20 }, { name: "Charmeleon", lvl: 25 }],
+          charmander: [{ name: "Pidgeotto", lvl: 25 }, { name: "Exeggcute", lvl: 23 }, { name: "Gyarados", lvl: 22 }, { name: "Kadabra", lvl: 20 }, { name: "Wartortle", lvl: 25 }],
+          squirtle: [{ name: "Pidgeotto", lvl: 25 }, { name: "Growlithe", lvl: 23 }, { name: "Exeggcute", lvl: 22 }, { name: "Kadabra", lvl: 20 }, { name: "Ivysaur", lvl: 25 }]
+        }
+      },
+      {
+        name: "Erika",
+        role: "Gym Leader",
+        loc: "Celadon City Gym",
+        cap: "Lv 29",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/erika-gen3.png",
+        teams: {
+          all: [{ name: "Victreebel", lvl: 29 }, { name: "Tangela", lvl: 24 }, { name: "Vileplume", lvl: 29 }]
+        }
+      },
+      {
+        name: "Giovanni",
+        role: "Team Rocket Boss (Hideout)",
+        loc: "Rocket Hideout B4F",
+        cap: "Lv 29",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/giovanni-gen3.png",
+        teams: {
+          all: [{ name: "Onix", lvl: 25 }, { name: "Rhyhorn", lvl: 24 }, { name: "Kangaskhan", lvl: 29 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 6",
+        loc: "Silph Co. 7F",
+        cap: "Lv 40",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeot", lvl: 37 }, { name: "Gyarados", lvl: 38 }, { name: "Growlithe", lvl: 35 }, { name: "Alakazam", lvl: 35 }, { name: "Charizard", lvl: 40 }],
+          charmander: [{ name: "Pidgeot", lvl: 37 }, { name: "Exeggcute", lvl: 38 }, { name: "Gyarados", lvl: 35 }, { name: "Alakazam", lvl: 35 }, { name: "Blastoise", lvl: 40 }],
+          squirtle: [{ name: "Pidgeot", lvl: 37 }, { name: "Growlithe", lvl: 38 }, { name: "Exeggcute", lvl: 35 }, { name: "Alakazam", lvl: 35 }, { name: "Venusaur", lvl: 40 }]
+        }
+      },
+      {
+        name: "Giovanni",
+        role: "Team Rocket Boss (Silph Co)",
+        loc: "Silph Co. 11F",
+        cap: "Lv 41",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/giovanni-lgpe.png",
+        teams: {
+          all: [{ name: "Nidorino", lvl: 37 }, { name: "Kangaskhan", lvl: 35 }, { name: "Rhyhorn", lvl: 37 }, { name: "Nidoqueen", lvl: 41 }]
+        }
+      },
+      {
+        name: "Koga",
+        role: "Gym Leader",
+        loc: "Fuchsia City Gym",
+        cap: "Lv 43",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/koga-gen3.png",
+        teams: {
+          all: [{ name: "Koffing", lvl: 37 }, { name: "Muk", lvl: 39 }, { name: "Koffing", lvl: 37 }, { name: "Weezing", lvl: 43 }]
+        }
+      },
+      {
+        name: "Sabrina",
+        role: "Gym Leader",
+        loc: "Saffron City Gym",
+        cap: "Lv 43",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/sabrina-gen3.png",
+        teams: {
+          all: [{ name: "Kadabra", lvl: 38 }, { name: "Mr-Mime", lvl: 37 }, { name: "Venomoth", lvl: 38 }, { name: "Alakazam", lvl: 43 }]
+        }
+      },
+      {
+        name: "Blaine",
+        role: "Gym Leader",
+        loc: "Cinnabar Island Gym",
+        cap: "Lv 47",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blaine-gen3.png",
+        teams: {
+          all: [{ name: "Growlithe", lvl: 42 }, { name: "Ponyta", lvl: 40 }, { name: "Rapidash", lvl: 42 }, { name: "Arcanine", lvl: 47 }]
+        }
+      },
+      {
+        name: "Giovanni",
+        role: "Gym Leader",
+        loc: "Viridian City Gym",
+        cap: "Lv 50",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/giovanni-gen3.png",
+        teams: {
+          all: [{ name: "Rhyhorn", lvl: 45 }, { name: "Dugtrio", lvl: 42 }, { name: "Nidoqueen", lvl: 44 }, { name: "Nidoking", lvl: 45 }, { name: "Rhydon", lvl: 50 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Rival 7",
+        loc: "Route 22 (West of Viridian)",
+        cap: "Lv 53",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3two.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeot", lvl: 47 }, { name: "Rhyhorn", lvl: 45 }, { name: "Gyarados", lvl: 45 }, { name: "Growlithe", lvl: 45 }, { name: "Alakazam", lvl: 47 }, { name: "Charizard", lvl: 53 }],
+          charmander: [{ name: "Pidgeot", lvl: 47 }, { name: "Rhyhorn", lvl: 45 }, { name: "Exeggcute", lvl: 45 }, { name: "Gyarados", lvl: 45 }, { name: "Alakazam", lvl: 47 }, { name: "Blastoise", lvl: 53 }],
+          squirtle: [{ name: "Pidgeot", lvl: 47 }, { name: "Rhyhorn", lvl: 45 }, { name: "Growlithe", lvl: 45 }, { name: "Exeggcute", lvl: 45 }, { name: "Alakazam", lvl: 47 }, { name: "Venusaur", lvl: 53 }]
+        }
+      },
+      {
+        name: "Lorelei",
+        role: "Elite Four",
+        loc: "Indigo Plateau",
+        cap: "Lv 54",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/lorelei-gen3.png",
+        teams: {
+          all: [{ name: "Dewgong", lvl: 52 }, { name: "Cloyster", lvl: 51 }, { name: "Slowbro", lvl: 52 }, { name: "Jynx", lvl: 54 }, { name: "Lapras", lvl: 54 }]
+        }
+      },
+      {
+        name: "Bruno",
+        role: "Elite Four",
+        loc: "Indigo Plateau",
+        cap: "Lv 56",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/bruno-gen3.png",
+        teams: {
+          all: [{ name: "Onix", lvl: 51 }, { name: "Hitmonchan", lvl: 53 }, { name: "Hitmonlee", lvl: 53 }, { name: "Onix", lvl: 54 }, { name: "Machamp", lvl: 56 }]
+        }
+      },
+      {
+        name: "Agatha",
+        role: "Elite Four",
+        loc: "Indigo Plateau",
+        cap: "Lv 58",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/agatha-gen3.png",
+        teams: {
+          all: [{ name: "Gengar", lvl: 54 }, { name: "Golbat", lvl: 54 }, { name: "Haunter", lvl: 53 }, { name: "Arbok", lvl: 56 }, { name: "Gengar", lvl: 58 }]
+        }
+      },
+      {
+        name: "Lance",
+        role: "Elite Four",
+        loc: "Indigo Plateau",
+        cap: "Lv 60",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/lance-gen3.png",
+        teams: {
+          all: [{ name: "Gyarados", lvl: 56 }, { name: "Dragonair", lvl: 54 }, { name: "Dragonair", lvl: 54 }, { name: "Aerodactyl", lvl: 58 }, { name: "Dragonite", lvl: 60 }]
+        }
+      },
+      {
+        name: "Blue",
+        role: "Champion",
+        loc: "Indigo Plateau",
+        cap: "Lv 63",
+        sprite: "https://play.pokemonshowdown.com/sprites/trainers/blue-gen3champion.png",
+        teams: {
+          bulbasaur: [{ name: "Pidgeot", lvl: 59 }, { name: "Alakazam", lvl: 57 }, { name: "Rhydon", lvl: 59 }, { name: "Gyarados", lvl: 61 }, { name: "Arcanine", lvl: 61 }, { name: "Charizard", lvl: 63 }],
+          charmander: [{ name: "Pidgeot", lvl: 59 }, { name: "Alakazam", lvl: 57 }, { name: "Rhydon", lvl: 59 }, { name: "Exeggutor", lvl: 61 }, { name: "Gyarados", lvl: 61 }, { name: "Blastoise", lvl: 63 }],
+          squirtle: [{ name: "Pidgeot", lvl: 59 }, { name: "Alakazam", lvl: 57 }, { name: "Rhydon", lvl: 59 }, { name: "Arcanine", lvl: 61 }, { name: "Exeggutor", lvl: 61 }, { name: "Venusaur", lvl: 63 }]
+        }
+      }
+    ];
+
+    function getLocationClass(name) {
+      if (name === "Starter") return "loc-special";
+      if (name.startsWith("Route")) return "loc-route";
+      if (name.includes("City") || name.includes("Town") || name === "Cinnabar Island") return "loc-city";
+      if (name.includes("Island")) return "loc-island";
+      return "loc-dungeon";
+    }
+
+    function formatName(str) {
+      return str.split('-').map(w => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+    }
+
+    function cleanForApi(str) {
+      return str.trim().toLowerCase()
+        .replace(/[♀]/g, '-f')
+        .replace(/[♂]/g, '-m')
+        .replace(/['.:]/g, '')
+        .replace(/\s+/g, '-');
+    }
+
+    async function getPokemonDetails(name) {
+      if (!name) return null;
+      const key = cleanForApi(name);
+      if (pokemonDetailsCache[key]) return pokemonDetailsCache[key];
+
+      try {
+        const res = await fetch(`https://pokeapi.co/api/v2/pokemon/${key}`);
+        if (!res.ok) return null;
+        const data = await res.json();
+        
+        const details = {
+          sprite: data.sprites.front_default || "",
+          types: data.types.map(t => t.type.name)
+        };
+        pokemonDetailsCache[key] = details;
+        return details;
+      } catch {
+        return null;
+      }
+    }
+
+    async function updateSlotDisplay(row, playerKey, name) {
+      const spriteImg = row.querySelector(`.${playerKey}-sprite`);
+      const typesContainer = row.querySelector(`.${playerKey}-types`);
+
+      if (!name) {
+        spriteImg.src = "";
+        spriteImg.style.display = "none";
+        typesContainer.innerHTML = "";
+        return;
+      }
+
+      const details = await getPokemonDetails(name);
+      if (details) {
+        if (details.sprite) {
+          spriteImg.src = details.sprite;
+          spriteImg.style.display = "block";
+        } else {
+          spriteImg.style.display = "none";
+        }
+
+        typesContainer.innerHTML = details.types
+          .map(t => `<span class="type-pill type-${t}">${t}</span>`)
+          .join('');
+      } else {
+        spriteImg.style.display = "none";
+        typesContainer.innerHTML = "";
+      }
+    }
+
+    async function canEvolve(pokemonName) {
+      if (!pokemonName) return false;
+      const key = cleanForApi(pokemonName);
+      if (evolutionCheckCache[key] !== undefined) return evolutionCheckCache[key];
+
+      try {
+        const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${key}`);
+        if (!speciesRes.ok) return false;
+        const speciesData = await speciesRes.json();
+        
+        const chainRes = await fetch(speciesData.evolution_chain.url);
+        const chainData = await chainRes.json();
+        
+        let foundNode = null;
+        function searchChain(node) {
+          if (node.species.name === key) { foundNode = node; return; }
+          node.evolves_to.forEach(searchChain);
+        }
+        searchChain(chainData.chain);
+        
+        const result = foundNode && foundNode.evolves_to.length > 0;
+        evolutionCheckCache[key] = result;
+        return result;
+      } catch {
+        return false;
+      }
+    }
+
+    async function updateEvolveButtonVisibility(btnElem, pokemonName) {
+      if (!pokemonName) {
+        btnElem.style.display = "none";
+        return;
+      }
+      const evolvable = await canEvolve(pokemonName);
+      btnElem.style.display = evolvable ? "inline-flex" : "none";
+    }
+
+    async function getEvolution(currentName) {
+      if (!currentName) return null;
+      try {
+        const cleanName = cleanForApi(currentName);
+        const speciesRes = await fetch(`https://pokeapi.co/api/v2/pokemon-species/${cleanName}`);
+        if (!speciesRes.ok) throw new Error("Species not found");
+        const speciesData = await speciesRes.json();
+        
+        const chainRes = await fetch(speciesData.evolution_chain.url);
+        const chainData = await chainRes.json();
+        
+        let foundNode = null;
+        function searchChain(node) {
+          if (node.species.name === cleanName) { foundNode = node; return; }
+          node.evolves_to.forEach(searchChain);
+        }
+        searchChain(chainData.chain);
+        
+        if (!foundNode || foundNode.evolves_to.length === 0) return null;
+        
+        const nextEvos = foundNode.evolves_to.map(evo => formatName(evo.species.name));
+        
+        if (nextEvos.length === 1) {
+          return nextEvos[0];
+        } else {
+          const choice = prompt(`Branching evolution! What did ${currentName} evolve into?\nOptions: ${nextEvos.join(', ')}`);
+          return choice ? formatName(choice.trim()) : null;
+        }
+      } catch (err) {
+        console.error("Evolution failed:", err);
+        const manual = prompt(`Could not load evolution automatically. Enter it manually:`);
+        return manual ? formatName(manual.trim()) : null;
+      }
+    }
+
+    function showMenu() {
+      document.getElementById("trackerView").style.display = "none";
+      document.getElementById("bossView").style.display = "none";
+      document.getElementById("menuView").style.display = "block";
+      document.getElementById("currentSaveDisplay").innerText = "Shared Playthrough Ledger";
+      if (pairsRef) { pairsRef.off(); pairsRef = null; }
+      if (metaRef) { metaRef.off(); metaRef = null; }
+      if (bossesRef) { bossesRef.off(); bossesRef = null; }
+    }
+
+    function showTracker(saveName) {
+      document.getElementById("menuView").style.display = "none";
+      document.getElementById("bossView").style.display = "none";
+      document.getElementById("trackerView").style.display = "block";
+      
+      currentSaveName = saveName.trim().toLowerCase().replace(/\s+/g, '-');
+      document.getElementById("currentSaveDisplay").innerText = `Active Run: ${currentSaveName}`;
+
+      buildChecklist();
+
+      metaRef = db.ref(`saves/${currentSaveName}/meta`);
+      metaRef.on("value", (snapshot) => {
+        const meta = snapshot.val() || {};
+        document.getElementById("p1NameHeader").innerText = meta.p1Name || "Player 1";
+        document.getElementById("p2NameHeader").innerText = meta.p2Name || "Player 2";
+      });
+
+      if (bossesRef) bossesRef.off();
+      bossesRef = db.ref(`saves/${currentSaveName}/bosses`);
+      bossesRef.on("value", (snapshot) => {
+        bossState = snapshot.val() || {};
+        updateNextCapDisplay();
+      });
+
+      pairsRef = db.ref(`saves/${currentSaveName}/routes`);
+      pairsRef.on("value", (snapshot) => {
+        firebaseState = snapshot.val() || {};
+        
+        Object.keys(firebaseState).forEach(routeKey => {
+          const rowData = firebaseState[routeKey];
+          const row = document.getElementById(`row-${routeKey}`);
+          if (!row) return;
+
+          const p1Container = row.querySelector('.p1-container');
+          const p2Container = row.querySelector('.p2-container');
+          
+          p1Container.dataset.value = rowData.p1 || "";
+          p1Container.querySelector('.custom-select-trigger span').innerText = rowData.p1 || "Select...";
+          
+          p2Container.dataset.value = rowData.p2 || "";
+          p2Container.querySelector('.custom-select-trigger span').innerText = rowData.p2 || "Select...";
+
+          updateSlotDisplay(row, 'p1', rowData.p1);
+          updateSlotDisplay(row, 'p2', rowData.p2);
+
+          updateEvolveButtonVisibility(row.querySelector('.p1-evolve'), rowData.p1);
+          updateEvolveButtonVisibility(row.querySelector('.p2-evolve'), rowData.p2);
+
+          const aliveBtn = row.querySelector('.status-btn');
+          const isAlive = rowData.alive !== false;
+          
+          aliveBtn.innerHTML = isAlive 
+            ? `<svg class="pokeball-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#292d38" stroke="#38bdf8" stroke-width="2"/><path d="M2 12h20" stroke="#38bdf8" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="#292d38" stroke="#38bdf8" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="#38bdf8"/></svg> Alive`
+            : `<svg class="pokeball-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#292d38" stroke="#f47174" stroke-width="2" opacity="0.6"/><path d="M2 12h20" stroke="#f47174" stroke-width="2" opacity="0.6"/><circle cx="12" cy="12" r="3.5" fill="#292d38" stroke="#f47174" stroke-width="2" opacity="0.6"/><line x1="6" y1="6" x2="18" y2="18" stroke="#f47174" stroke-width="2"/></svg> Fainted`;
+          
+          aliveBtn.className = `status-btn ${isAlive ? 'btn-alive' : 'btn-dead'}`;
+          row.className = isAlive ? '' : 'dead-row';
+        });
+      });
+    }
+
+    function showBossPage() {
+      document.getElementById("trackerView").style.display = "none";
+      document.getElementById("menuView").style.display = "none";
+      document.getElementById("bossView").style.display = "block";
+      document.getElementById("currentSaveDisplay").innerText = `Major Battles & Caps (${currentSaveName})`;
+      
+      buildBossAccordion();
+
+      if (bossesRef) bossesRef.off();
+      bossesRef = db.ref(`saves/${currentSaveName}/bosses`);
+      bossesRef.on("value", (snapshot) => {
+        bossState = snapshot.val() || {};
+        updateBossDefeatedUI();
+        updateNextCapDisplay();
+      });
+    }
+
+    function updateNextCapDisplay() {
+      const capPill = document.getElementById("nextCapPill");
+      if (!capPill) return;
+
+      const firstUndefeated = frlgBosses.find((_, idx) => bossState[idx] !== true);
+      if (firstUndefeated) {
+        capPill.innerHTML = `Next Cap: <strong>${firstUndefeated.cap}</strong> (${firstUndefeated.name})`;
+        capPill.style.display = "inline-flex";
+      } else {
+        capPill.innerHTML = `🏆 <strong>Champion Defeated!</strong>`;
+        capPill.style.display = "inline-flex";
+      }
+    }
+
+    function buildChecklist() {
+      const tbody = document.getElementById("trackerTable");
+      tbody.innerHTML = "";
+      localRouteCache = {}; 
+
+      fireRedOrder.forEach(loc => {
+        const routeKey = loc.display.replace(/[^a-zA-Z0-9]/g, '-').toLowerCase();
+        const url = loc.apiId ? `https://pokeapi.co/api/v2/location/${loc.apiId}/` : '';
+        const locClass = getLocationClass(loc.display);
+        
+        const tr = document.createElement("tr");
+        tr.id = `row-${routeKey}`;
+        tr.innerHTML = `
+          <td><span class="loc-badge ${locClass}">${loc.display}</span></td>
+          <td>
+            <div class="pkmn-slot">
+              <div class="sprite-box">
+                <img class="sprite-img p1-sprite" src="" alt="">
+              </div>
+              <div class="pkmn-select-block">
+                <div class="custom-select p1-container" data-route="${routeKey}" data-url="${url}" data-player="p1">
+                  <div class="custom-select-trigger"><span>Select...</span> <small style="color:var(--text-subtle)">▼</small></div>
+                  <div class="custom-select-options"></div>
+                </div>
+                <div class="types-container p1-types"></div>
+              </div>
+              <button class="evolve-btn p1-evolve" data-route="${routeKey}" data-player="p1" title="Evolve">
+                <span class="evo-arrow">▲</span> Evo
+              </button>
+            </div>
+          </td>
+          <td>
+            <div class="pkmn-slot">
+              <div class="sprite-box">
+                <img class="sprite-img p2-sprite" src="" alt="">
+              </div>
+              <div class="pkmn-select-block">
+                <div class="custom-select p2-container" data-route="${routeKey}" data-url="${url}" data-player="p2">
+                  <div class="custom-select-trigger"><span>Select...</span> <small style="color:var(--text-subtle)">▼</small></div>
+                  <div class="custom-select-options"></div>
+                </div>
+                <div class="types-container p2-types"></div>
+              </div>
+              <button class="evolve-btn p2-evolve" data-route="${routeKey}" data-player="p2" title="Evolve">
+                <span class="evo-arrow">▲</span> Evo
+              </button>
+            </div>
+          </td>
+          <td>
+            <button class="status-btn btn-alive" data-route="${routeKey}">
+              <svg class="pokeball-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" fill="#292d38" stroke="#38bdf8" stroke-width="2"/><path d="M2 12h20" stroke="#38bdf8" stroke-width="2"/><circle cx="12" cy="12" r="3.5" fill="#292d38" stroke="#38bdf8" stroke-width="2"/><circle cx="12" cy="12" r="1.5" fill="#38bdf8"/></svg>
+              Alive
+            </button>
+          </td>
+        `;
+        tbody.appendChild(tr);
+      });
+
+      attachRowListeners();
+    }
+
+    function attachRowListeners() {
+      document.querySelectorAll('.custom-select').forEach(selectContainer => {
+        const trigger = selectContainer.querySelector('.custom-select-trigger');
+        const optionsBox = selectContainer.querySelector('.custom-select-options');
+
+        trigger.addEventListener('click', async (e) => {
+          e.stopPropagation();
+          const isOpen = selectContainer.classList.contains('active');
+          
+          document.querySelectorAll('.custom-select.active').forEach(el => el.classList.remove('active'));
+          
+          if (!isOpen) {
+            selectContainer.classList.add('active');
+            const routeKey = selectContainer.dataset.route;
+            const url = selectContainer.dataset.url;
+
+            if (!localRouteCache[routeKey]) {
+              optionsBox.innerHTML = '<div style="padding:0.75rem; color:var(--text-subtle); font-size:0.9rem;">Fetching Pokémon...</div>';
+              localRouteCache[routeKey] = await fetchEncounters(url, routeKey);
+            }
+            populateCustomSelect(selectContainer, localRouteCache[routeKey]);
+          }
+        });
+      });
+
+      window.addEventListener('click', () => {
+        document.querySelectorAll('.custom-select.active').forEach(el => el.classList.remove('active'));
+      });
+
+      document.querySelectorAll('.evolve-btn').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          const btnElem = e.currentTarget; 
+          const routeKey = btnElem.dataset.route;
+          const playerKey = btnElem.dataset.player;
+          
+          const currentName = firebaseState[routeKey]?.[playerKey] || "";
+          if (!currentName) return;
+
+          const originalContent = btnElem.innerHTML;
+          btnElem.innerHTML = "…";
+          btnElem.disabled = true;
+
+          try {
+            const evolvedName = await getEvolution(currentName);
+            if (evolvedName) {
+              await db.ref(`saves/${currentSaveName}/routes/${routeKey}`).update({ 
+                [playerKey]: evolvedName 
+              });
+            }
+          } catch (err) {
+            console.error(err);
+          } finally {
+            btnElem.innerHTML = originalContent;
+            btnElem.disabled = false;
+          }
+        });
+      });
+
+      document.querySelectorAll('.status-btn').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+          const routeKey = e.target.dataset.route;
+          const currentState = firebaseState[routeKey]?.alive !== false;
+          db.ref(`saves/${currentSaveName}/routes/${routeKey}`).update({ alive: !currentState });
+        });
+      });
+    }
+
+    async function populateCustomSelect(selectContainer, pokemonList) {
+      const optionsBox = selectContainer.querySelector('.custom-select-options');
+      optionsBox.innerHTML = "";
+
+      const clearOpt = document.createElement("div");
+      clearOpt.className = "custom-option";
+      clearOpt.innerHTML = `<span style="color:var(--text-subtle);">None / Clear</span>`;
+      clearOpt.onclick = () => selectPokemon(selectContainer, "");
+      optionsBox.appendChild(clearOpt);
+
+      for (const name of pokemonList) {
+        const opt = document.createElement("div");
+        opt.className = "custom-option";
+        
+        const details = await getPokemonDetails(name);
+        const spriteSrc = details ? details.sprite : "";
+        opt.innerHTML = `
+          ${spriteSrc ? `<img class="option-sprite" src="${spriteSrc}" alt="">` : `<div style="width:30px;height:30px;"></div>`}
+          <span>${name}</span>
+        `;
+        opt.onclick = () => selectPokemon(selectContainer, name);
+        optionsBox.appendChild(opt);
+      }
+
+      const customOpt = document.createElement("div");
+      customOpt.className = "custom-option";
+      customOpt.style.borderTop = "1px solid var(--border-subtle)";
+      customOpt.innerHTML = `<span>✍️ Custom / Other...</span>`;
+      customOpt.onclick = () => {
+        const manual = prompt("Enter custom Pokémon name:");
+        if (manual && manual.trim()) {
+          selectPokemon(selectContainer, formatName(manual.trim()));
+        }
+      };
+      optionsBox.appendChild(customOpt);
+    }
+
+    function selectPokemon(selectContainer, value) {
+      const routeKey = selectContainer.dataset.route;
+      const playerKey = selectContainer.dataset.player;
+      selectContainer.classList.remove('active');
+
+      db.ref(`saves/${currentSaveName}/routes/${routeKey}`).update({ 
+        [playerKey]: value,
+        alive: firebaseState[routeKey]?.alive !== false
+      });
+    }
+
+    document.getElementById("editP1Btn").addEventListener("click", () => {
+      const current = document.getElementById("p1NameHeader").innerText;
+      const newName = prompt("Enter Player 1 Name:", current);
+      if (newName && newName.trim()) {
+        db.ref(`saves/${currentSaveName}/meta`).update({ p1Name: newName.trim() });
+      }
+    });
+
+    document.getElementById("editP2Btn").addEventListener("click", () => {
+      const current = document.getElementById("p2NameHeader").innerText;
+      const newName = prompt("Enter Player 2 Name:", current);
+      if (newName && newName.trim()) {
+        db.ref(`saves/${currentSaveName}/meta`).update({ p2Name: newName.trim() });
+      }
+    });
+
+    async function fetchEncounters(locationUrl, routeKey) {
+      if (routeKey === "starter") {
+        return ["Bulbasaur", "Charmander", "Squirtle"];
+      }
+
+      if (!locationUrl) return [];
+
+      try {
+        const locRes = await fetch(locationUrl);
+        const locData = await locRes.json();
+        let validPokemon = new Set();
+
+        const areaPromises = locData.areas.map(area => fetch(area.url).then(res => res.json()));
+        const areasData = await Promise.all(areaPromises);
+
+        areasData.forEach(area => {
+          area.pokemon_encounters.forEach(encounter => {
+            const inVersion = encounter.version_details.some(vd => 
+              vd.version.name === "firered" || vd.version.name === "leafgreen"
+            );
+            if (inVersion) {
+              validPokemon.add(formatName(encounter.pokemon.name));
+            }
+          });
+        });
+        return Array.from(validPokemon).sort();
+      } catch (err) {
+        console.error(err);
+        return [];
+      }
+    }
+
+    const starterPickSelect = document.getElementById("starterPickSelect");
+    starterPickSelect.addEventListener("change", () => {
+      buildBossAccordion();
+      updateBossDefeatedUI();
+    });
+
+    function buildBossAccordion() {
+      const container = document.getElementById("bossAccordionContainer");
+      container.innerHTML = "";
+      const starterChoice = starterPickSelect.value;
+
+      frlgBosses.forEach((boss, index) => {
+        const item = document.createElement("div");
+        item.className = "boss-accordion-item";
+        item.id = `boss-item-${index}`;
+        item.dataset.index = index;
+
+        item.innerHTML = `
+          <div class="boss-row-header">
+            <span class="boss-chevron">❯</span>
+            <img class="boss-trainer-sprite" src="${boss.sprite}" alt="${boss.name}">
+            <div class="boss-info-block">
+              <span class="boss-name-text">${boss.name}</span>
+              <span class="boss-role-text">${boss.role}</span>
+            </div>
+            <div class="boss-header-meta">
+              <span class="boss-loc-text">${boss.loc}</span>
+              <span class="level-cap-badge">Cap: ${boss.cap}</span>
+              <button class="boss-status-btn btn-boss-undefeated" data-index="${index}">⚔️ Undefeated</button>
+            </div>
+          </div>
+          <div class="boss-accordion-body">
+            <div class="boss-team-row" id="boss-team-${index}">
+              <span style="color:var(--text-subtle); font-size:0.9rem;">Loading encounter team...</span>
+            </div>
+          </div>
+        `;
+
+        const header = item.querySelector(".boss-row-header");
+        const statusBtn = item.querySelector(".boss-status-btn");
+
+        header.addEventListener("click", (e) => {
+          if (e.target.closest('.boss-status-btn')) return;
+          const isOpen = item.classList.contains("open");
+          item.classList.toggle("open");
+          if (!isOpen) {
+            loadBossTeam(boss, index, starterChoice);
+          }
+        });
+
+        statusBtn.addEventListener("click", (e) => {
+          e.stopPropagation();
+          const isDefeated = bossState[index] === true;
+          db.ref(`saves/${currentSaveName}/bosses/${index}`).set(!isDefeated);
+        });
+
+        container.appendChild(item);
+      });
+    }
+
+    function updateBossDefeatedUI() {
+      frlgBosses.forEach((_, index) => {
+        const item = document.getElementById(`boss-item-${index}`);
+        if (!item) return;
+
+        const isDefeated = bossState[index] === true;
+        const btn = item.querySelector('.boss-status-btn');
+
+        if (isDefeated) {
+          item.classList.add('defeated');
+          btn.className = 'boss-status-btn btn-boss-defeated';
+          btn.innerText = '✔ Defeated';
+        } else {
+          item.classList.remove('defeated');
+          btn.className = 'boss-status-btn btn-boss-undefeated';
+          btn.innerText = '⚔️ Undefeated';
+        }
+      });
+    }
+
+    async function loadBossTeam(boss, index, starterChoice) {
+      const teamRow = document.getElementById(`boss-team-${index}`);
+      if (teamRow.dataset.loaded === starterChoice) return;
+
+      teamRow.innerHTML = "";
+      const team = boss.teams[starterChoice] || boss.teams.all || [];
+
+      for (const pkmn of team) {
+        const badge = document.createElement("span");
+        badge.className = "boss-pkmn-badge";
+        
+        const details = await getPokemonDetails(pkmn.name);
+        const spriteSrc = details ? details.sprite : "";
+        badge.innerHTML = `
+          ${spriteSrc ? `<img src="${spriteSrc}" alt="">` : ""}
+          <span>${formatName(pkmn.name)}</span>
+          <span class="boss-pkmn-lvl">Lv.${pkmn.lvl}</span>
+        `;
+        teamRow.appendChild(badge);
+      }
+      teamRow.dataset.loaded = starterChoice;
+    }
+
+    document.getElementById("openBossPageBtn").addEventListener("click", showBossPage);
+    document.getElementById("backToTrackerBtn").addEventListener("click", () => showTracker(currentSaveName));
+
+    db.ref('save_registry').on('value', (snapshot) => {
+      const container = document.getElementById("saveListContainer");
+      container.innerHTML = "";
+      const saves = snapshot.val();
+      if (!saves) {
+        container.innerHTML = "<p style='color: var(--text-subtle); margin: 0;'>No active runs found.</p>";
+        return;
+      }
+
+      const ul = document.createElement("div");
+      ul.className = "save-list";
+      Object.keys(saves).forEach(saveName => {
+        const row = document.createElement("div");
+        row.className = "save-item-row";
+
+        const btn = document.createElement("button");
+        btn.className = "save-btn";
+        btn.innerText = `📁  ${saveName}`;
+        btn.onclick = () => showTracker(saveName);
+
+        const delBtn = document.createElement("button");
+        delBtn.className = "save-delete-btn";
+        delBtn.innerText = "🗑️";
+        delBtn.title = `Delete run "${saveName}"`;
+        delBtn.onclick = (e) => {
+          e.stopPropagation();
+          if (confirm(`Are you sure you want to permanently delete run "${saveName}"?`)) {
+            db.ref(`save_registry/${saveName}`).remove();
+            db.ref(`saves/${saveName}`).remove();
+          }
+        };
+
+        row.appendChild(btn);
+        row.appendChild(delBtn);
+        ul.appendChild(row);
+      });
+      container.appendChild(ul);
+    }, (err) => {
+      console.error(err);
+      document.getElementById("saveListContainer").innerHTML = "<p style='color: var(--status-faint); margin: 0;'>Failed to connect to database.</p>";
+    });
+
+    document.getElementById("createSaveBtn").addEventListener("click", () => {
+      const newSave = document.getElementById("newSaveInput").value.trim();
+      if (!newSave) return alert("Please enter a save name!");
+      
+      const cleanSave = newSave.toLowerCase().replace(/\s+/g, '-');
+      db.ref(`save_registry/${cleanSave}`).set(true).then(() => {
+        document.getElementById("newSaveInput").value = "";
+        showTracker(cleanSave);
+      }).catch(err => {
+        alert("Failed to create run: " + err.message);
+      });
+    });
+
+    document.getElementById("backBtn").addEventListener("click", showMenu);
+  </script>
+</body>
+</html>
